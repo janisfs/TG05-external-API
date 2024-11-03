@@ -4,15 +4,16 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 import random
 import requests
+from googletrans import Translator
 
 from config import TOKEN, THE_CAT_API_KEY
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Вот в этом промежутке мы будем работать и писать новый код
+
 def get_cat_breed():
-   url = "https://api.thecatapi.com/v1/images/search"
+   url = "https://api.thecatapi.com/v1/breeds"
    headers = {"x-api-key": "THE_CAT_API_KEY"}
    response = requests.get(url, headers=headers)
    return response.json()
@@ -29,11 +30,8 @@ def get_cat_image_by_breed(breed_id):
 def get_breed_info(breed_name):
    breeds = get_cat_breed()
    for breed in breeds:
-      try:
-         if breed['name'].lower() == breed_name.lower():
-            return breed
-      except KeyError:
-         continue
+       if breed['name'].lower() == breed_name.lower():
+           return breed
    return None
 
 
@@ -42,15 +40,19 @@ async def start(message: Message):
    await message.answer("Привет! Я бот, который показывает котиков. Выбери породу котика:")
 
 
+from googletrans import Translator
+
 @dp.message()
 async def send_cat_info(message: Message):
    breed_name = message.text
    breed_info = get_breed_info(breed_name)
    if breed_info:
        cat_image_url = get_cat_image_by_breed(breed_info['id'])
+       translator = Translator()
+       translated_description = translator.translate(breed_info['description'], dest='ru').text
        info = (
            f"Порода - {breed_info['name']}\n"
-           f"Описание - {breed_info['description']}\n"
+           f"Описание - {translated_description}\n"
            f"Продолжительность жизни - {breed_info['life_span']} лет"
        )
        await message.answer_photo(
@@ -59,20 +61,6 @@ async def send_cat_info(message: Message):
        )
    else:
        await message.answer("Извините, я не знаю такой породы котика.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 async def main():
