@@ -27,8 +27,16 @@ button_finances = KeyboardButton(text='Финансы')
 keyboards = ReplyKeyboardMarkup(keyboard=[[button_registr, button_exchange_rates],
                                           [button_tips, button_finances]], resize_keyboard=True)
 
+
+#
 conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
+
+
+# Удаление таблицы, если она существует или была ошибка при создании
+# cursor.execute("DROP TABLE IF EXISTS users")
+# conn.commit()
+
 
 
 # Создание таблицы, если она не существует
@@ -38,16 +46,17 @@ cursor.execute('''
        telegram_id INTEGER UNIQUE,
        name TEXT,
        category1 TEXT,
+       expanses1 REAL,
        category2 TEXT,
-       category3 TEXT,
-       expanses1 REAl
        expanses2 REAL,
+       category3 TEXT,
        expanses3 REAL
    )
 ''')
 conn.commit()
 
-#
+
+# Создание формы для ввода финансовых данных
 class FinanceForm(StatesGroup):
     category1 = State()
     expanses1 = State()
@@ -114,58 +123,52 @@ async def tips(message: Message):
         'Совет 5. Создавайте резервный фонд. Создайте резервный фонд на случай непредвиденных расходов. '
         'Это поможет вам избежать долгов и финансовых трудностей.',
         'Совет 6. Планируйте свои расходы. Составляйте ежемесячный бюджет и следите за своими расходами. '
-        'Это поможет вам лучше управлять своими финансами.'
-        'Совет 7. Используйте мобильные приложения для управления финансами. '
+        'Это поможет вам лучше управлять своими финансами.',
+        'Совет 7. Используйте мобильные приложения для управления финансами. ',
         'Совет 8. Избегайте покупок на импульс. Покупайте только то, что вам действительно нужно.'
     ]
     tip = random.choice(tips)
     await message.answer(tip)
 
 
-
+# Обработчик кнопки "Финансы"
 @dp.message(F.text == 'Финансы')
 async def finances(message: Message, state: FSMContext):
     await state.set_state(FinanceForm.category1)
     await message.reply('Выберите первую категорию расходов:')
 
-
 @dp.message(FinanceForm.category1)
-async def finances(message: Message, state: FSMContext):
+async def process_category1(message: Message, state: FSMContext):
     await state.update_data(category1=message.text)
     await state.set_state(FinanceForm.expanses1)
     await message.reply('Введите расходы для категории 1:')
 
-
 @dp.message(FinanceForm.expanses1)
-async def finances(message: Message, state: FSMContext):
-    await state.update_data(expanses1 = float(message.text))
-    await state.set_state(FinanceForm.expanses2)
+async def process_expanses1(message: Message, state: FSMContext):
+    await state.update_data(expanses1=float(message.text))
+    await state.set_state(FinanceForm.category2)  # Исправлено на category2
     await message.reply('Введите вторую категорию расходов:')
 
-
 @dp.message(FinanceForm.category2)
-async def finances(message: Message, state: FSMContext):
-    await state.update_data(category2 = message.text)
+async def process_category2(message: Message, state: FSMContext):
+    await state.update_data(category2=message.text)
     await state.set_state(FinanceForm.expanses2)
     await message.reply('Введите расходы для категории 2:')
 
-
 @dp.message(FinanceForm.expanses2)
-async def finances(message: Message, state: FSMContext):
-    await state.update_data(expenses2 = float(message.text))
+async def process_expanses2(message: Message, state: FSMContext):
+    await state.update_data(expanses2=float(message.text))
     await state.set_state(FinanceForm.category3)
     await message.reply('Введите третью категорию расходов:')
 
-
 @dp.message(FinanceForm.category3)
-async def finances(message: Message, state: FSMContext):
-    await state.update_data(category3 = message.text)
+async def process_category3(message: Message, state: FSMContext):
+    await state.update_data(category3=message.text)
     await state.set_state(FinanceForm.expanses3)
     await message.reply('Введите расходы для категории 3:')
 
-
 @dp.message(FinanceForm.expanses3)
-async def finances(message: Message, state: FSMContext):
+async def process_expanses3(message: Message, state: FSMContext):
     data = await state.get_data()
     telegram_id = message.from_user.id
     cursor.execute('''
@@ -178,8 +181,6 @@ async def finances(message: Message, state: FSMContext):
     await state.clear()
 
     await message.answer('Ваши данные сохранены.')
-
-
 
 
 
