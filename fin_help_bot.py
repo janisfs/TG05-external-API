@@ -28,7 +28,7 @@ keyboards = ReplyKeyboardMarkup(keyboard=[[button_registr, button_exchange_rates
                                           [button_tips, button_finances]], resize_keyboard=True)
 
 
-#
+# Подключение к базе данных
 conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
 
